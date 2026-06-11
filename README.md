@@ -1,28 +1,60 @@
-# WARNING
-Before using this tool, please save your pictures first. I don't want to be held responsible for any accident...
+# JPEG Ransomware Recovery Tool
 
-# Recover JPEG
-When you have a JPEG pictures that is corrupted because the begining of the file is lost (corrupted, encrypted...), this tool can help!
+> ⚠️ **CRITICAL WARNING:** Always back up your encrypted files to a completely separate folder before running this utility. The author assumes no responsibility for data loss or file modification accidents.
 
-It works by extracting the valid data (from 0xFFDA Start Of Scan) from the corrupted file and append it to the valid headers (initial data) of another valid file (model).
+---
 
-You'll have to provide models pictures files taken with the same camera with different resolutions, orientations and quality settings.
+## 📌 Overview
 
-# How to use
-Create a folder **\_\_models\_\_** asside the executable and fill it with the model files. Name them carefully because the model name is appended to the recovered picture (ex. s7-1080-paysage.jpg).
+This utility is specifically designed to salvage JPEG photographs that have had their headers destroyed, corrupted, or targeted by ransomware encryption.
 
-Then, just drag the corrupted file on the executable. It will try to reconstruct jpeg files with all the models provided. There will be many invalid files asside the corrupted picture, but hopefully there will be one valid file.
+If your camera photos were hit by a ransomware variant that only targets the first **150 KB** of each file, the vast majority of your actual image data is still completely intact! This tool extracts that surviving raw bitstream and matches it with a healthy donor header to rebuild a fully viewable photo.
 
-# How it works
-(I'm absolutly not a specialist, so excuse me if some information is wrong or inaccurate)
+---
 
-The essential part of a JPEG picture is what comes after the 0xFFDA (Start Of Scan) marker. Fortunatly this is the last (and biggest part) or a file, so when the begining of a file is corrupted, the SOS is always here!
+## ⚙️ How It Works
 
-What does this tool is extract the SOS data of a corrupted picture, append it the the other parts of a valid file, and tries to parse the result as a new JPEG file.
+A standard JPEG image is split into two major sections:
 
-# Why I did this tool
-I'm a victim of a ransomware attack! All my personal pics were gone!
+1. **The Header Metadata:** Contains the camera settings, color profiles, resolution tables, and quantization data.
+2. **The Entropy Bitstream:** The actual image content, which begins immediately following the `0xFFDA` (**Start of Scan / SOS**) marker.
 
-But when I saw that only the first 10kb of each file is encrypted, I was sure there will be a mean to recover my pictures, and indeed there was!
+Because ransomware typically only encrypts the initial kilobytes of a file, the critical SOS bitstream survives. This tool isolates the healthy payload data from the broken file, grafts it directly onto the valid headers of an unencrypted "model" file, and reconstructs a functional JPEG container wrapper.
 
-This is why, when no SOS marker is found in the encrypted file, this tool extracts all but the first 10kb and tries to rebuild a valid SOS marker bloc. In this case, you will be prompted to enter a value for 'padding'; this will be amount of 0x00 bytes prepended to the recovered data.
+```
+[ Encrypted First 150KB ] + [ SURVIVING RAW SOS BITSTREAM ]
+                                      │
+       ┌──────────────────────────────┘
+       ▼
+[ HEALTHY DONOR HEADER ]  + [ SURVIVING RAW SOS BITSTREAM ] = SUCCESSFUL RECOVERY!
+
+```
+
+---
+
+## 🚀 How to Use
+
+### Step 1: Set Up Your Donor Models
+
+1. Beside the executable script, create a folder named exactly `__models__`.
+2. Fill this folder with a small collection of **healthy, unencrypted photographs** taken directly from the exact same camera or phone that shot the broken pictures.
+3. *Crucial:* Include models that match every setting combination your camera used (e.g., different resolutions, aspect ratios, quality profiles, and landscape vs. portrait orientations).
+
+### Step 2: Run the Recovery Pipeline
+
+* **Drag and Drop:** Simply drag your corrupted file (e.g., `.JPG.nppp`) and drop it directly onto the executable script.
+* **Batch Processing:** The tool will automatically cycle your corrupted bitstream through *every single model* inside your `__models__` folder.
+* **Reviewing Outputs:** It will generate multiple output variations side-by-side. While many variations will look like scrambled noise due to layout mismatches, **the single file that perfectly matches the resolution and orientation of your donor model will cleanly decode.**
+
+### Step 3: Managing Stream Padding & 8x8 Alignment
+
+If the ransomware completely zeroed out or cut into your original SOS marker blocks, the script will automatically strip the broken 150 KB header chunk and prompt you for a **Padding Value**.
+
+* **Why padding is requested:** JPEG decoders read image rows sequentially using Minimum Coding Units (MCUs). If bits are missing from the beginning of the stream, subsequent rows shift out of alignment.
+* **The Magic Numbers:** Depending on how heavily your camera compresses color metadata, try entering these precise structural blocks when prompted to realign mismatched mountain lines or horizons:
+
+---
+
+## 💬 Author's Note
+
+I built this utility out of absolute necessity after falling victim to a ransomware attack that locked away years of personal memories. Realizing the encryption loop was lazy and left the core payload untouched gave me the key to piece my photos back together. I am sharing this script in the hope that it helps you reclaim your stolen memories just like it did for me!
